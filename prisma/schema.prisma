@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoomStatus {
+  waiting
+  active
+  finished
+}
+
+enum Side {
+  FOR
+  AGAINST
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  createdRooms DebateRoom[] @relation("CreatorRooms")
+  joinedRooms  DebateRoom[] @relation("OpponentRooms")
+  wonRooms     DebateRoom[] @relation("WinnerRooms")
+  messages     Message[]
+}
+
+model DebateRoom {
+  id           String     @id @default(uuid())
+  title        String
+  creatorId    String
+  creator      User       @relation("CreatorRooms", fields: [creatorId], references: [id])
+  creatorSide  Side
+  opponentId   String?
+  opponent     User?      @relation("OpponentRooms", fields: [opponentId], references: [id])
+  status       RoomStatus @default(waiting)
+  currentRound Int        @default(1)
+  createdAt    DateTime   @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  winnerId     String?
+  winner       User?      @relation("WinnerRooms", fields: [winnerId], references: [id])
+  aiReason     String?
+
+  messages Message[]
+
+  @@index([status])
+}
+
+model Message {
+  id        String     @id @default(uuid())
+  roomId    String
+  room      DebateRoom @relation(fields: [roomId], references: [id])
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id])
+  round     Int
+  message   String
+  createdAt DateTime   @default(now())
+
+  @@index([roomId])
+}
